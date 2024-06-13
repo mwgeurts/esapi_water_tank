@@ -11,6 +11,7 @@ using Microsoft.Win32;
 using System.Xml.Linq;
 using static System.Net.Mime.MediaTypeNames;
 using System.Windows.Media;
+using System.Collections.Generic;
 
 namespace ProfileComparison
 {
@@ -145,39 +146,41 @@ namespace ProfileComparison
             {
                 MessageBox.Show("You must select a SNC TXT file first");
                 return;
-            } 
-            
+            }
+
             // Run ParseSNCTXT to extract the first profile from the selected file
-            double[,] txt = Script.ParseSNCTXT(uiFile.Text);
+            List<Profile> txt = Script.ParseSNCTXT(uiFile.Text);
 
             // Extract a line dose from the current planned dose using the coordinates from the SNC TXT profile, converting to
             // DICOM coordinates using the UserToDicom ESAPI function
-            VVector start = context.Image.UserToDicom(new VVector(txt[0, 0], txt[1, 0], txt[2, 0]), context.PlanSetup);
-            VVector end = context.Image.UserToDicom(new VVector(txt[0, txt.GetLength(1) - 1], txt[1, txt.GetLength(1) - 1], txt[2, txt.GetLength(1) - 1]), context.PlanSetup);
+            VVector start = context.Image.UserToDicom(txt.First().Position, context.PlanSetup);
+            VVector end = context.Image.UserToDicom(txt.Last().Position, context.PlanSetup);
             
             // Set the TPS resolution equal to 10X the DTA
             Double.TryParse(Regex.Match(uiDTA.Text, @"\d+\.*\d*").Value, out double dta);
             DoseProfile tpsProfile = context.PlanSetup.Dose.GetDoseProfile(start, end, new double[(int) Math.Ceiling((end - start).Length / dta * 10)]);
 
-            // Store the DoseProfile object as an array, converting profile coordinates back from DICOM
-            double[,] tps = new double[4, (int)Math.Ceiling((end - start).Length / dta * 10)];
+            // Store the DoseProfile object as Profile list, converting profile coordinates back from DICOM
+            List<Profile> tps = new List<Profile>();
             double maxval = 0;
-            for (int i = 0; i < tps.GetLength(1); i++)
+            foreach (ProfilePoint profile in tpsProfile)
             {
-                VVector user = context.Image.DicomToUser(tpsProfile[i].Position, context.PlanSetup);
-                tps[0, i] = user[0];
-                tps[1, i] = user[1];
-                tps[2, i] = user[2];
-                if (tpsProfile[i].Value > maxval)
+                Profile nextRow = new Profile();
+                nextRow.Position = context.Image.DicomToUser(profile.Position, context.PlanSetup);
+                nextRow.Value = profile.Value;
+                tps.Add(nextRow);
+
+                if (profile.Value > maxval)
                 {
-                    maxval = tpsProfile[i].Value;
+                    maxval = profile.Value;
                 }
             }
 
-            for (int i = 0; i < tps.GetLength(1); i++)
+            foreach (Profile point in tps)
             {
-                tps[3, i] = tpsProfile[i].Value / maxval * 100;
+                point.Value = point.Value / maxval * 100;
             }
+
 
             // Apply convolution
 
@@ -191,7 +194,7 @@ namespace ProfileComparison
             double t = 0;
 
             // If the depth axis changes, assume this is a depth profile, calculate PDD or R50 (based on if it is an photon or electron)
-            if (Math.Abs(txt[1, 0] - txt[1, txt.GetLength(1) - 1]) > 10)
+            if (Math.Abs(txt.First().Position[1] - txt.Last().Position[1]) > 10)
             {
                 double dmeas = 0;
                 double dcalc = 0;
@@ -207,22 +210,22 @@ namespace ProfileComparison
                 }
                 else
                 {
-                    for (int i = 1; i < txt.GetLength(1); i++)
+                    for (int i = 1; i < txt.Count(); i++)
                     {
-                        if (Math.Sign(txt[1, i - 1] - 100) != Math.Sign(txt[1, i] - 100))
+                        if (Math.Sign(txt[i - 1].Position[1] - 100) != Math.Sign(txt[i].Position[1] - 100))
                         {
-                            dmeas = interp(100, txt[1, i - 1], txt[1, i], txt[3, i - 1], txt[3, i]);
+                            dmeas = interp(100, txt[i - 1].Position[1], txt[i].Position[1], txt[i-1].Value, txt[i].Value);
                             t = Math.Round(dmeas * 100) / 100;
                             uiDmeas.Text = t.ToString() + "%";
                             break;
                         }
                     }
 
-                    for (int i = 1; i < tps.GetLength(1); i++)
+                    for (int i = 1; i < tps.Count(); i++)
                     {
-                        if (Math.Sign(tps[1, i - 1] - 100) != Math.Sign(tps[1, i] - 100))
+                        if (Math.Sign(tps[i - 1].Position[1] - 100) != Math.Sign(tps[i].Position[1] - 100))
                         {
-                            dcalc = tps[3, i];
+                            dcalc = (tps[i - 1].Position[1] + tps[i].Position[1]) / 2;
                             t = Math.Round(dcalc * 100) / 100;
                             uiDcalc.Text = t.ToString() + "%";
                             break;

@@ -14,13 +14,25 @@ using System.Text.RegularExpressions;
 
 namespace VMS.TPS
 {
-  public class Script
+
+    public class Profile
+    {
+        public VVector Position;
+        public double Value;
+    }
+
+    public class Script
   {
-    public Script()
+
+        
+
+        public Script()
     {
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+        
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
     public void Execute(ScriptContext context, System.Windows.Window window/*, ScriptEnvironment environment*/)
     {
         // Launch a new user interface defined by FileBrowser.xaml
@@ -33,10 +45,10 @@ namespace VMS.TPS
         // Pass the current patient context to the UI
         userInterface.context = context;
     }
+       
 
-        
 
-        public static double[,] ParseSNCTXT(string fileName)
+        public static List<Profile> ParseSNCTXT(string fileName)
         {
             if (fileName == null)
             {
@@ -44,7 +56,7 @@ namespace VMS.TPS
             }
 
             // Initialize list to store parsed lines
-            List<double[]> parsedList = new List<double[]>();
+            List<Profile> parsedList = new List<Profile>();
 
             int matchCount = 0;
             const Int32 BufferSize = 128;
@@ -67,11 +79,9 @@ namespace VMS.TPS
                         Double.TryParse(m.Groups[4].Value, out double d);
 
                         // Flip Y and Z axes to match Eclipse coordinate system
-                        double[] nextRow = new double[4];
-                        nextRow[0] = x*10;
-                        nextRow[1] = z*10;
-                        nextRow[2] = y*10;
-                        nextRow[3] = d;
+                        Profile nextRow = new Profile();
+                        nextRow.Position = new VVector(x * 10, z * 10, y * 10);
+                        nextRow.Value = d;
                         parsedList.Add(nextRow);
                     }
 
@@ -84,35 +94,22 @@ namespace VMS.TPS
                 }
             }
 
-            // Initialize return array
-            double[,] returnArray = new double[4, matchCount];
-
-            // Loop through list, coverting to array
-            for (int i = 0; i < matchCount; i++)
-            {
-                returnArray[0, i] = parsedList[i][0];
-                returnArray[1, i] = parsedList[i][1];
-                returnArray[2, i] = parsedList[i][2];
-                returnArray[3, i] = parsedList[i][3];
-            }
-
-            return returnArray;
+            return parsedList;
         }
 
-        public static double[] CalculateGamma(double[,] arr1, double[,] arr2, double abs, double dta, double threshold)
+        public static double[] CalculateGamma(List<Profile> profile1, List<Profile> profile2, double abs, double dta, double threshold)
         {
             // Initialize results and return arrays
-            double[] results = new double[arr1.GetLength(1)];
+            double[] results = new double[profile1.Count()];
             double[] returnArray = new double[3];
-            VVector distance = new VVector();
             double gamma = 0;
             double excluded = 0;
 
             // Loop through first array
-            for (int i = 0; i < arr1.GetLength(1); i++)
+            for (int i = 0; i < profile1.Count(); i++)
             {
                 // Exclude values below threshold
-                if (arr1[3, i] < threshold)
+                if (profile1[i].Value < threshold)
                 {
                     excluded++;
                     continue;
@@ -122,13 +119,11 @@ namespace VMS.TPS
                 results[i] = 1000;
 
                 // Loop through second array
-                for (int j = 0; j < arr2.GetLength(1); j++)
+                for (int j = 0; j < profile2.Count(); j++)
                 {
-                    // Calculate distance vector
-                    distance = new VVector(arr1[0, i], arr1[1, i], arr1[2, i]) - new VVector(arr2[0, j], arr2[1, j], arr2[2, j]);
 
                     // Calculate Gamma-squared
-                    gamma = (arr1[3, i] - arr2[3, j]) * (arr1[3, i] - arr2[3, j]) / abs + distance.LengthSquared / (dta * dta);
+                    gamma = Math.Pow(profile1[i].Value - profile2[j].Value, 2) / abs + (profile1[i].Position - profile2[j].Position).LengthSquared / (dta * dta);
 
                     // Update minimum Gamma-squared
                     if (gamma < results[i])
@@ -153,7 +148,7 @@ namespace VMS.TPS
             returnArray[2] = 0;
             for (int i = 0; i < results.Length; i++)
             {
-                if (arr1[3, i] < threshold)
+                if (profile1[i].Value < threshold)
                 {
                     continue;
                 }
