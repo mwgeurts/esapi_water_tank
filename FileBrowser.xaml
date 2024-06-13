@@ -1,0 +1,68 @@
+<UserControl x:Class="ProfileComparison.FileBrowser"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ProfileComparison"
+             mc:Ignorable="d" Height="350" Width="597">
+    <Grid Margin="10,10,10,10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="10"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="10"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="100"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+        </Grid.RowDefinitions>
+        <Label Grid.Column="0" Grid.Row="0" Content="SNC TXT File"></Label>
+        <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="5"  Name="uiFile" IsReadOnly="True"></TextBox>
+        <Button Grid.Column="6" Grid.Row="0" Content="Browse" Click="BrowseFile" Height="25"></Button>
+        <Label Grid.Column="0" Grid.Row="2" Content="Convolution Sigma/Truncation"></Label>
+        <TextBox Grid.Column="1" Grid.Row="2" Name="uiSigma" IsReadOnly="False" LostKeyboardFocus="ValidateSigma">0.000 mm</TextBox>
+        <TextBox Grid.Column="3" Grid.Row="2" Name="uiTruncation" IsReadOnly="False" LostKeyboardFocus="ValidateTruncation">0.000 mm</TextBox>
+        <Label Grid.Column="0" Grid.Row="4" Content="Gamma Settings"></Label>
+        <TextBox Grid.Column="1" Grid.Row="4" Name="uiPercent" IsReadOnly="False" LostKeyboardFocus="ValidatePercent">2.0%</TextBox>
+        <TextBox Grid.Column="3" Grid.Row="4" Name="uiDTA" IsReadOnly="False" LostKeyboardFocus="ValidateDTA">1.0 mm</TextBox>
+        <TextBox Grid.Column="5" Grid.Row="4" Name="uiThreshold" IsReadOnly="False" LostKeyboardFocus="ValidateThreshold">10.0%</TextBox>
+        <Button Grid.Column="1" Grid.Row="6" Content="Calculate" Click="CompareProfiles" Height="25"></Button>
+        <Label Grid.Column="1" Grid.Row="8" Content="Text File"></Label>
+        <Label Grid.Column="3" Grid.Row="8" Content="TPS"></Label>
+        <Label Grid.Column="5" Grid.Row="8" Content="Difference"></Label>
+        <Label Grid.Column="0" Grid.Row="10" Content="PDD(10)/R50"></Label>
+        <TextBox Grid.Column="1" Grid.Row="10" Name="uiDmeas" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="3" Grid.Row="10" Name="uiDcalc" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="5" Grid.Row="10" Name="uiDdiff" IsReadOnly="True"></TextBox>
+        <Label Grid.Column="0" Grid.Row="12" Content="FWHM"></Label>
+        <TextBox Grid.Column="1" Grid.Row="12" Name="uiFWHMmeas" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="3" Grid.Row="12" Name="uiFWHMcalc" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="5" Grid.Row="12" Name="uiFWHMdiff" IsReadOnly="True"></TextBox>
+        <Label Grid.Column="1" Grid.Row="14" Content="Pass Rate"></Label>
+        <Label Grid.Column="3" Grid.Row="14" Content="Average"></Label>
+        <Label Grid.Column="5" Grid.Row="14" Content="Max Value"></Label>
+        <Label Grid.Column="0" Grid.Row="16" Content="Gamma"></Label>
+        <TextBox Grid.Column="1" Grid.Row="16" Name="uiPass" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="3" Grid.Row="16" Name="uiAvg" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="5" Grid.Row="16" Name="uiMax" IsReadOnly="True"></TextBox>
+    </Grid>
+</UserControl>
