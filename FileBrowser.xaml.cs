@@ -12,6 +12,7 @@ using System.Xml.Linq;
 using static System.Net.Mime.MediaTypeNames;
 using System.Windows.Media;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 
 namespace ProfileComparison
 {
@@ -54,86 +55,115 @@ namespace ProfileComparison
             {
                 uiFile.Text = fileDialog.FileName;
             }
+
+            ClearResults();
         }
 
         // ValidateSigma is called whenever the sigma input field is changed, to validate and reformat the input
         private void ValidateSigma(object sender, KeyboardFocusChangedEventArgs e)
         {
             // First try to parse the input text as a number (the regex automatically removes the units)
-            Double.TryParse(Regex.Match(uiSigma.Text, @"\d+\.*\d*").Value, out double test);
-            if (test > 0)
+            Double.TryParse(Regex.Match(uiSigma.Text, @"\d+\.*\d*").Value, out double t);
+            if (t > 0)
             {
                 // If successful, store the parsed number to three decimal precision with mm units
-                test = Math.Round(test * 1000) / 1000;
-                uiSigma.Text = test.ToString() + " mm";
+                t = Math.Round(t * 1000) / 1000;
+                uiSigma.Text = t.ToString() + " mm";
             }
             else
                 // If not successful, revert the field to the default value
                 uiSigma.Text = "0.000 mm";
+
+            ClearResults();
         }
 
         // ValidateTruncation is called whenever the threshold input field is changed, to validate and reformat the input
         private void ValidateTruncation(object sender, KeyboardFocusChangedEventArgs e)
         {
             // First try to parse the input text as a number (the regex automatically removes the units)
-            Double.TryParse(Regex.Match(uiTruncation.Text, @"\d+\.*\d*").Value, out double test);
-            if (test > 0)
+            Double.TryParse(Regex.Match(uiTruncation.Text, @"\d+\.*\d*").Value, out double t);
+            if (t > 0)
             {
                 // If successful, store the parsed number to single decimal precision with the mm units
-                test = Math.Round(test * 1000) / 1000;
-                uiTruncation.Text = test.ToString() + " mm";
+                t = Math.Round(t * 1000) / 1000;
+                uiTruncation.Text = t.ToString() + " mm";
             }
             else
                 // If not successful, revert the field to the default value
                 uiTruncation.Text = "0.000 mm";
+
+            ClearResults();
         }
 
         // ValidateTruncation is called whenever the threshold input field is changed, to validate and reformat the input
         private void ValidateDTA(object sender, KeyboardFocusChangedEventArgs e)
         {
             // First try to parse the input text as a number (the regex automatically removes the units)
-            Double.TryParse(Regex.Match(uiDTA.Text, @"\d+\.*\d*").Value, out double test);
-            if (test > 0)
+            Double.TryParse(Regex.Match(uiDTA.Text, @"\d+\.*\d*").Value, out double t);
+            if (t > 0)
             {
                 // If successful, store the parsed number to single decimal precision with the mm units
-                test = Math.Round(test * 10) / 10;
-                uiDTA.Text = test.ToString() + " mm";
+                t = Math.Round(t * 10) / 10;
+                uiDTA.Text = t.ToString() + " mm";
             }
             else
                 // If not successful, revert the field to the default value
                 uiDTA.Text = "1.0 mm";
+
+            ClearResults();
         }
 
         // ValidateThreshold is called whenever the threshold input field is changed, to validate and reformat the input
         private void ValidateThreshold(object sender, KeyboardFocusChangedEventArgs e)
         {
             // First try to parse the input text as a number (the regex automatically removes the units)
-            Double.TryParse(Regex.Match(uiThreshold.Text, @"\d+\.*\d*").Value, out double test);
-            if (test > 0)
+            Double.TryParse(Regex.Match(uiThreshold.Text, @"\d+\.*\d*").Value, out double t);
+            if (t >= 0)
             {
                 // If successful, store the parsed number to single decimal precision with a percent symbol
-                test = Math.Round(test * 10) / 10;
-                uiThreshold.Text = test.ToString() + "%";
+                t = Math.Round(t * 10) / 10;
+                uiThreshold.Text = t.ToString() + "%";
             }
             else
                 // If not successful, revert the field to the default value
                 uiThreshold.Text = "10.0%";
+
+            ClearResults();
         }
 
         // ValidatePercent is called whenever the Gamma percent input field is changed, to validate and reformat the input
         private void ValidatePercent(object sender, KeyboardFocusChangedEventArgs e)
         {
             // First try to parse the input text as a number (the regex automatically removes the % symbol)
-            Double.TryParse(Regex.Match(uiPercent.Text, @"\d+\.*\d*").Value, out double test);
-            if (test > 0)
+            Double.TryParse(Regex.Match(uiPercent.Text, @"\d+\.*\d*").Value, out double t);
+            if (t > 0)
             {
                 // If successful, store the parsed number to single decimal precision with a percent symbol
-                test = Math.Round(test * 10) / 10;
-                uiPercent.Text = test.ToString() + "%";
+                t = Math.Round(t * 10) / 10;
+                uiPercent.Text = t.ToString() + "%";
             }
             else
                 // If not successful, revert the field to the default value
-                uiPercent.Text = "2.0%";
+                uiPercent.Text = "1.0%";
+
+            ClearResults();
+        }
+
+        // ClearResults is called whenever an input variable is changed, and clears the results fields
+        private void ClearResults()
+        {
+            uiDmeas.Text = "";
+            uiDcalc.Text = "";
+            uiDdiff.Text = "";
+            uiFmeas.Text = "";
+            uiFcalc.Text = "";
+            uiFdiff.Text = "";
+            uiLPass.Text = "";
+            uiLAvg.Text = "";
+            uiLMax.Text = "";
+            uiGPass.Text = "";
+            uiGAvg.Text = "";
+            uiGMax.Text = "";
         }
 
         // CompareProfiles is called when the form button is clicked, and compares the dose volume of the current plan to
@@ -155,41 +185,77 @@ namespace ProfileComparison
             // DICOM coordinates using the UserToDicom ESAPI function
             VVector start = context.Image.UserToDicom(txt.First().Position, context.PlanSetup);
             VVector end = context.Image.UserToDicom(txt.Last().Position, context.PlanSetup);
-            
+
             // Set the TPS resolution equal to 10X the DTA
             Double.TryParse(Regex.Match(uiDTA.Text, @"\d+\.*\d*").Value, out double dta);
             DoseProfile tpsProfile = context.PlanSetup.Dose.GetDoseProfile(start, end, new double[(int) Math.Ceiling((end - start).Length / dta * 10)]);
 
-            // Store the DoseProfile object as Profile list, converting profile coordinates back from DICOM
+            // Store the DoseProfile object as Profile list, converting profile coordinates back from DICOM and normalizing to the maximum dose in the plan
             List<Profile> tps = new List<Profile>();
             double maxval = 0;
-            foreach (ProfilePoint profile in tpsProfile)
+            foreach (ProfilePoint point in tpsProfile)
             {
                 Profile nextRow = new Profile();
-                nextRow.Position = context.Image.DicomToUser(profile.Position, context.PlanSetup);
-                nextRow.Value = profile.Value;
+                nextRow.Position = context.Image.DicomToUser(point.Position, context.PlanSetup);
+                nextRow.Value = point.Value;
                 tps.Add(nextRow);
 
-                if (profile.Value > maxval)
+                if (point.Value > maxval)
                 {
-                    maxval = profile.Value;
+                    maxval = point.Value;
                 }
             }
 
-            foreach (Profile point in tps)
+            
+            List<Profile> convtps = new List<Profile>();
+            Double.TryParse(Regex.Match(uiSigma.Text, @"\d+\.*\d*").Value, out double sigma);
+            Double.TryParse(Regex.Match(uiTruncation.Text, @"\d+\.*\d*").Value, out double trunc);
+
+            // If the convolution filter is zero, skip convolution
+            if (sigma == 0)
+            {
+                convtps = tps;
+            }
+            else
+            {
+
+                // Precalculate denominator of filter
+                sigma = 2 * Math.Pow(sigma, 2);
+
+                // Apply convolution to calculated dose
+                for (int i = 0; i < tps.Count; i++)
+                {
+                    Profile nextRow = new Profile();
+                    nextRow.Position = tps[i].Position;
+                    nextRow.Value = 0;
+
+                    for (int j = 0; j < tps.Count; j++)
+                    {
+                        if ((tps[i].Position - tps[j].Position).Length > trunc)
+                            continue;
+
+                        else
+                        {
+                            nextRow.Value += tps[j].Value * Math.Exp(-Math.Pow((tps[i].Position - tps[j].Position).Length, 2) / sigma);
+                        }
+
+                    }
+
+                    // Update maxval for normalization
+                    if (nextRow.Value > maxval)
+                    {
+                        maxval = nextRow.Value;
+                    }
+
+                    convtps.Add(nextRow);
+                }
+            }
+
+            // Normalize profile to 100%
+            foreach (Profile point in convtps)
             {
                 point.Value = point.Value / maxval * 100;
             }
-
-
-            // Apply convolution
-
-            //
-            //
-            //  TO DO
-            //
-            //
-
 
             double t = 0;
 
@@ -221,11 +287,11 @@ namespace ProfileComparison
                         }
                     }
 
-                    for (int i = 1; i < tps.Count(); i++)
+                    for (int i = 1; i < convtps.Count(); i++)
                     {
-                        if (Math.Sign(tps[i - 1].Position[1] - 100) != Math.Sign(tps[i].Position[1] - 100))
+                        if (Math.Sign(convtps[i - 1].Position[1] - 100) != Math.Sign(convtps[i].Position[1] - 100))
                         {
-                            dcalc = (tps[i - 1].Position[1] + tps[i].Position[1]) / 2;
+                            dcalc = interp(100, convtps[i - 1].Position[1], convtps[i].Position[1], convtps[i - 1].Value, convtps[i].Value);
                             t = Math.Round(dcalc * 100) / 100;
                             uiDcalc.Text = t.ToString() + "%";
                             break;
@@ -243,11 +309,24 @@ namespace ProfileComparison
             // Otherwise, calculate the FWHM of the profiles
             else
             {
-                //
-                //
-                // TO DO
-                //
-                //
+                double fmeas = Script.CalculateFWHM(txt);
+                if (fmeas != 0)
+                {
+                    t = Math.Round(fmeas * 10) / 100;
+                    uiFmeas.Text = t.ToString() + " cm";
+                }
+
+                double fcalc = Script.CalculateFWHM(convtps);
+                if (fcalc != 0)
+                {
+                    t = Math.Round(fcalc * 10) / 100;
+                    uiFcalc.Text = t.ToString() + " cm";
+                }
+                if (fmeas != 0 && fcalc != 0)
+                {
+                    t = Math.Round((fcalc - fmeas) * 10) / 100;
+                    uiFdiff.Text = t.ToString() + " cm";
+                }
 
             }
 
@@ -255,18 +334,27 @@ namespace ProfileComparison
             Double.TryParse(Regex.Match(uiPercent.Text, @"\d+\.*\d*").Value, out double percent);
             Double.TryParse(Regex.Match(uiThreshold.Text, @"\d+\.*\d*").Value, out double threshold);
 
-            double[] gammaStats = Script.CalculateGamma(txt, tps, percent, dta, threshold);
+            double[,] gammaStats = Script.CalculateGamma(txt, convtps, percent, dta, threshold);
 
             if (gammaStats != null)
             {
-                t = Math.Round((gammaStats[0]) * 10) / 10;
-                uiPass.Text = t.ToString() + "%";
+                t = Math.Round((gammaStats[0, 0]) * 10) / 10;
+                uiLPass.Text = t.ToString() + "%";
 
-                t = Math.Round((gammaStats[1]) * 100) / 100;
-                uiAvg.Text = t.ToString();
+                t = Math.Round((gammaStats[0, 1]) * 100) / 100;
+                uiLAvg.Text = t.ToString();
 
-                t = Math.Round((gammaStats[2]) * 100) / 100;
-                uiMax.Text = t.ToString();
+                t = Math.Round((gammaStats[0, 2]) * 100) / 100;
+                uiLMax.Text = t.ToString();
+
+                t = Math.Round((gammaStats[1, 0]) * 10) / 10;
+                uiGPass.Text = t.ToString() + "%";
+
+                t = Math.Round((gammaStats[1, 1]) * 100) / 100;
+                uiGAvg.Text = t.ToString();
+
+                t = Math.Round((gammaStats[1, 2]) * 100) / 100;
+                uiGMax.Text = t.ToString();
             }
 
         }

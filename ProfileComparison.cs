@@ -40,7 +40,7 @@ namespace VMS.TPS
         window.Title = "Water Tank Profile Comparison Tool";
         window.Content = userInterface;
         window.Width = 650;
-        window.Height = 400;
+        window.Height = 450;
 
         // Pass the current patient context to the UI
         userInterface.context = context;
@@ -59,9 +59,10 @@ namespace VMS.TPS
             List<Profile> parsedList = new List<Profile>();
 
             int matchCount = 0;
+            double maxval = 0;
             const Int32 BufferSize = 128;
             
-            Regex r = new Regex(@"\t([\d\.]+)\t([\d\.]+)\t([\d\.]+)\t([\d\.]+)");
+            Regex r = new Regex(@"\t([-\d\.]+)\t([-\d\.]+)\t([-\d\.]+)\t([\d\.]+)");
             using (var fileStream = File.OpenRead(fileName))
             using (var streamReader = new StreamReader(fileStream, Encoding.UTF8, true, BufferSize))
             {
@@ -77,6 +78,12 @@ namespace VMS.TPS
                         Double.TryParse(m.Groups[2].Value, out double y);
                         Double.TryParse(m.Groups[3].Value, out double z);
                         Double.TryParse(m.Groups[4].Value, out double d);
+
+                        // Keep track of profile maximum
+                        if (d > maxval)
+                        {
+                            maxval = d;
+                        }
 
                         // Flip Y and Z axes to match Eclipse coordinate system
                         Profile nextRow = new Profile();
@@ -94,15 +101,22 @@ namespace VMS.TPS
                 }
             }
 
+            // Normalize profile to 100%
+            foreach (Profile point in parsedList)
+            {
+                point.Value = point.Value / maxval * 100;
+            }
+
             return parsedList;
         }
 
-        public static double[] CalculateGamma(List<Profile> profile1, List<Profile> profile2, double abs, double dta, double threshold)
+        public static double[,] CalculateGamma(List<Profile> profile1, List<Profile> profile2, double abs, double dta, double threshold)
         {
             // Initialize results and return arrays
-            double[] results = new double[profile1.Count()];
-            double[] returnArray = new double[3];
-            double gamma = 0;
+            double[,] results = new double[2,profile1.Count()];
+            double[,] returnArray = new double[2,3];
+            double local = 0;
+            double global = 0;
             double excluded = 0;
 
             // Loop through first array
@@ -116,57 +130,118 @@ namespace VMS.TPS
                 }
 
                 // Start at a default Gamma value of 1000 (arbitrary, used to determine min value)
-                results[i] = 1000;
+                results[0,i] = 1000;
+                results[1, i] = 1000;
 
                 // Loop through second array
                 for (int j = 0; j < profile2.Count(); j++)
                 {
 
-                    // Calculate Gamma-squared
-                    gamma = Math.Pow(profile1[i].Value - profile2[j].Value, 2) / abs + (profile1[i].Position - profile2[j].Position).LengthSquared / (dta * dta);
+                    // Calculate local Gamma-squared
+                    local = Math.Pow((profile1[i].Value - profile2[j].Value) / (profile1[i].Value * abs / 100), 2) + 
+                        (profile1[i].Position - profile2[j].Position).LengthSquared / Math.Pow(dta, 2);
+
+                    // Calculate global Gamma-squared
+                    global = Math.Pow((profile1[i].Value - profile2[j].Value) / abs, 2) +
+                        (profile1[i].Position - profile2[j].Position).LengthSquared / Math.Pow(dta, 2);
 
                     // Update minimum Gamma-squared
-                    if (gamma < results[i])
+                    if (local < results[0, i])
                     {
-                        results[i] = gamma;
+                        results[0,i] = local;
+                    }
+                    if (global < results[1, i])
+                    {
+                        results[1,i] = global;
                     }
 
                     // If a gamma of zero is found, skip ahead to next point (this is meant to speed things up)
-                    if (gamma < 0.01)
+                    if (local < 0.01)
                     {
                         break;
                     }
                 }
 
                 // Apply sqaure root to Gamma
-                results[i] = Math.Sqrt(results[i]);
+                results[0, i] = Math.Sqrt(results[0, i]);
+                results[1, i] = Math.Sqrt(results[1, i]);
             }
 
             // Calculate gamma statistics
-            returnArray[0] = 0;
-            returnArray[1] = 0;
-            returnArray[2] = 0;
-            for (int i = 0; i < results.Length; i++)
+            returnArray[0, 0] = 0;
+            returnArray[0, 1] = 0;
+            returnArray[0, 2] = 0;
+            returnArray[1, 0] = 0;
+            returnArray[1, 1] = 0;
+            returnArray[1, 2] = 0;
+            for (int i = 0; i < results.GetLength(1); i++)
             {
                 if (profile1[i].Value < threshold)
                 {
                     continue;
                 }
 
-                if (results[i] < 1) 
+                if (results[0, i] <= 1) 
                 {
-                    returnArray[0]++;
+                    returnArray[0, 0]++;
                 }
-                returnArray[1] = returnArray[1] + results[i];
-                if (returnArray[2] < results[i])
+                if (results[1, i] <= 1)
                 {
-                    returnArray[2] = results[i];
+                    returnArray[1, 0]++;
+                }
+                returnArray[0, 1] = returnArray[0, 1] + results[0, i];
+                returnArray[1, 1] = returnArray[1, 1] + results[1, i];
+                if (returnArray[0, 2] < results[0, i])
+                {
+                    returnArray[0, 2] = results[0, i];
+                }
+                if (returnArray[1, 2] < results[1, i])
+                {
+                    returnArray[1, 2] = results[1, i];
                 }
             }
-            returnArray[0] = returnArray[0] / (results.Length - excluded) * 100;
-            returnArray[1] = returnArray[1] / (results.Length - excluded);
+            returnArray[0, 0] = returnArray[0, 0] / (results.GetLength(1) - excluded) * 100;
+            returnArray[1, 0] = returnArray[1, 0] / (results.GetLength(1) - excluded) * 100;
+            returnArray[0, 1] = returnArray[0, 1] / (results.GetLength(1) - excluded);
+            returnArray[1, 1] = returnArray[1, 1] / (results.GetLength(1) - excluded);
 
             return returnArray;
+        }
+
+        public static double CalculateFWHM(List<Profile> profile)
+        {
+            // Initialize temporary and return variables
+            double thresh = 0;
+            double fwhm = 0;
+
+            foreach (Profile point in profile)
+            {
+                if (point.Value > thresh)
+                {
+                    thresh = point.Value;
+                }
+            }
+
+            // Set threshold to half max
+            thresh /= 2;
+
+            for (int i = 1; i < profile.Count; i++)
+            {
+                if (Math.Sign(profile[i - 1].Value - thresh) != Math.Sign(profile[i].Value - thresh))
+                {
+                    for (int j = i + 2; j < profile.Count - 1; j++) 
+                    {
+                        if (Math.Sign(profile[j].Value - thresh) != Math.Sign(profile[j + 1].Value - thresh))
+                        {
+                            fwhm = (profile[j].Position - profile[i].Position).Length;
+                            break;
+                        }
+
+                    }
+                    break;
+                }
+            }
+            return fwhm;
         }
   }
 }
