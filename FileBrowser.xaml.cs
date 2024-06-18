@@ -13,6 +13,9 @@ using static System.Net.Mime.MediaTypeNames;
 using System.Windows.Media;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Windows.Shapes;
+using System.ComponentModel;
+using System.Windows.Threading;
 
 namespace ProfileComparison
 {
@@ -26,11 +29,41 @@ namespace ProfileComparison
 
         public ScriptContext context;
 
+        readonly double chartHeight = 370;
+        readonly double chartWidth = 437;
+
         // FileBrowser constructor
         public FileBrowser()
         {
             InitializeComponent();
+
+            // Initialize chart area with sine and cosine waves
+            double res = 700;
+            for (int i = 0; i < res; i++)
+            {
+                uiChartArea.Children.Add(new Line()
+                {
+                    X1 = i / res * chartWidth,
+                    X2 = (i + 1) / res * chartWidth,
+                    Y1 = (Math.Sin(i * 10 / res) + 1) * chartHeight / 2,
+                    Y2 = (Math.Sin((i + 1) * 10 / res) + 1) * chartHeight / 2,
+                    Stroke = Brushes.Red,
+                    StrokeThickness = 1
+                });
+                uiChartArea.Children.Add(new Line()
+                {
+                    X1 = i * chartWidth / res,
+                    X2 = (i + 1) / res * chartWidth,
+                    Y1 = (Math.Cos(i * 10 / res) + 1) * chartHeight / 2,
+                    Y2 = (Math.Cos((i + 1) * 10 / res) + 1) * chartHeight / 2,
+                    Stroke = Brushes.Blue,
+                    StrokeThickness = 1
+                });
+            }
         }
+
+        
+
 
         public static double interp(double x, double x0, double x1, double y0, double y1)
         {
@@ -45,6 +78,9 @@ namespace ProfileComparison
         // The resulting file locating is sent back to the UI.
         private void BrowseFile(object sender, RoutedEventArgs e)
         {
+            ClearResults();
+            uiChartArea.Children.Clear();
+
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.Filter = "SNCTXT Files (*.snctxt)|*.snctxt";
             fileDialog.Title = "Select the water tank profile...";
@@ -56,7 +92,7 @@ namespace ProfileComparison
                 uiFile.Text = fileDialog.FileName;
             }
 
-            ClearResults();
+            
         }
 
         // ValidateSigma is called whenever the sigma input field is changed, to validate and reformat the input
@@ -126,7 +162,7 @@ namespace ProfileComparison
             }
             else
                 // If not successful, revert the field to the default value
-                uiThreshold.Text = "10.0%";
+                uiThreshold.Text = "20.0%";
 
             ClearResults();
         }
@@ -188,7 +224,7 @@ namespace ProfileComparison
 
             // Set the TPS resolution equal to 10X the DTA
             Double.TryParse(Regex.Match(uiDTA.Text, @"\d+\.*\d*").Value, out double dta);
-            DoseProfile tpsProfile = context.PlanSetup.Dose.GetDoseProfile(start, end, new double[(int) Math.Ceiling((end - start).Length / dta * 10)]);
+            DoseProfile tpsProfile = context.PlanSetup.Dose.GetDoseProfile(start, end, new double[(int)Math.Ceiling((end - start).Length / dta * 10)]);
 
             // Store the DoseProfile object as Profile list, converting profile coordinates back from DICOM and normalizing to the maximum dose in the plan
             List<Profile> tps = new List<Profile>();
@@ -206,7 +242,7 @@ namespace ProfileComparison
                 }
             }
 
-            
+
             List<Profile> convtps = new List<Profile>();
             Double.TryParse(Regex.Match(uiSigma.Text, @"\d+\.*\d*").Value, out double sigma);
             Double.TryParse(Regex.Match(uiTruncation.Text, @"\d+\.*\d*").Value, out double trunc);
@@ -264,7 +300,7 @@ namespace ProfileComparison
             {
                 double dmeas = 0;
                 double dcalc = 0;
-                
+
 
                 if (context.PlanSetup.PhotonCalculationModel is null)
                 {
@@ -280,7 +316,7 @@ namespace ProfileComparison
                     {
                         if (Math.Sign(txt[i - 1].Position[1] - 100) != Math.Sign(txt[i].Position[1] - 100))
                         {
-                            dmeas = interp(100, txt[i - 1].Position[1], txt[i].Position[1], txt[i-1].Value, txt[i].Value);
+                            dmeas = interp(100, txt[i - 1].Position[1], txt[i].Position[1], txt[i - 1].Value, txt[i].Value);
                             t = Math.Round(dmeas * 100) / 100;
                             uiDmeas.Text = t.ToString() + "%";
                             break;
@@ -334,30 +370,123 @@ namespace ProfileComparison
             Double.TryParse(Regex.Match(uiPercent.Text, @"\d+\.*\d*").Value, out double percent);
             Double.TryParse(Regex.Match(uiThreshold.Text, @"\d+\.*\d*").Value, out double threshold);
 
-            double[,] gammaStats = Script.CalculateGamma(txt, convtps, percent, dta, threshold);
+            List<Profile> gamma = Script.CalculateGamma(txt, convtps, percent, dta, threshold);
 
-            if (gammaStats != null)
+            // Calculate gamma statistics
+            double localPass = 0;
+            double globalPass = 0;
+            double localAverage = 0;
+            double globalAverage = 0;
+            double localMax = 0;
+            double globalMax = 0;
+
+            if (gamma.Count > 0)
             {
-                t = Math.Round((gammaStats[0, 0]) * 10) / 10;
+                foreach (Profile point in gamma)
+                {
+                    if (point.Value <= 1)
+                    {
+                        localPass = localPass + 1;
+                    }
+                    localAverage = localAverage + point.Value;
+
+                    if (localMax < point.Value)
+                    {
+                        localMax = point.Value;
+                    }
+ 
+                    if (point.Value2 <= 1)
+                    {
+                        globalPass = globalPass + 1;
+                    }
+                    globalAverage = globalAverage + point.Value2;
+
+                    if (globalMax < point.Value2)
+                    {
+                        globalMax = point.Value2;
+                    }
+                }
+
+                localPass = localPass / gamma.Count * 100;
+                globalPass = globalPass / gamma.Count * 100;
+
+                localAverage = localAverage / gamma.Count;
+                globalAverage = globalAverage / gamma.Count;
+
+                t = Math.Round((localPass) * 10) / 10;
                 uiLPass.Text = t.ToString() + "%";
 
-                t = Math.Round((gammaStats[0, 1]) * 100) / 100;
+                t = Math.Round((localAverage) * 100) / 100;
                 uiLAvg.Text = t.ToString();
 
-                t = Math.Round((gammaStats[0, 2]) * 100) / 100;
+                t = Math.Round((localMax) * 100) / 100;
                 uiLMax.Text = t.ToString();
 
-                t = Math.Round((gammaStats[1, 0]) * 10) / 10;
+                t = Math.Round((globalPass) * 10) / 10;
                 uiGPass.Text = t.ToString() + "%";
 
-                t = Math.Round((gammaStats[1, 1]) * 100) / 100;
+                t = Math.Round((globalAverage) * 100) / 100;
                 uiGAvg.Text = t.ToString();
 
-                t = Math.Round((gammaStats[1, 2]) * 100) / 100;
+                t = Math.Round((globalMax) * 100) / 100;
                 uiGMax.Text = t.ToString();
             }
 
-        }
+            // Clear Chart Area
+            uiChartArea.Children.Clear();
 
+            // Draw TXT Profile
+            double xscale = chartWidth / (txt.Last().Position - txt.First().Position).Length;
+            for (int i = 1; i < txt.Count; i++)
+            {
+                uiChartArea.Children.Add(new Line()
+                {
+                    X1 = (txt[i - 1].Position - txt.First().Position).Length * xscale,
+                    X2 = (txt[i].Position - txt.First().Position).Length * xscale,
+                    Y1 = chartHeight * (100 - txt[i - 1].Value) / 100,
+                    Y2 = chartHeight * (100 - txt[i].Value) / 100,
+                    Stroke = Brushes.Red,
+                    StrokeThickness = 1
+                });
+            }
+
+            // Draw TPS Profile
+            xscale = chartWidth / (convtps.Last().Position - convtps.First().Position).Length;
+            for (int i = 1; i < convtps.Count; i++)
+            {
+                if (Double.IsNaN(convtps[i - 1].Value) || Double.IsNaN(convtps[i].Value))
+                {
+                    continue;
+                }
+
+                uiChartArea.Children.Add(new Line()
+                {
+                    X1 = (convtps[i - 1].Position - convtps.First().Position).Length * xscale,
+                    X2 = (convtps[i].Position - convtps.First().Position).Length * xscale,
+                    Y1 = chartHeight * (100 - convtps[i - 1].Value) / 100,
+                    Y2 = chartHeight * (100 - convtps[i].Value) / 100,
+                    Stroke = Brushes.Blue,
+                    StrokeThickness = 1
+                });
+            }
+
+            // Plot Local Gamma (scale X position based on txt file, as gamma profile does not contain all positions)
+            xscale = chartWidth / (txt.Last().Position - txt.First().Position).Length;
+            for (int i = 1; i < gamma.Count; i++)
+            {
+                uiChartArea.Children.Add(new Line()
+                {
+                    X1 = (gamma[i - 1].Position - txt.First().Position).Length * xscale,
+                    X2 = (gamma[i].Position - txt.First().Position).Length * xscale,
+                    Y1 = chartHeight * (Math.Max(1, globalMax) - gamma[i - 1].Value2) / Math.Max(1, globalMax),
+                    Y2 = chartHeight * (Math.Max(1, globalMax) - gamma[i].Value2) / Math.Max(1, globalMax),
+                    Stroke = Brushes.LightGray,
+                    StrokeThickness = 1
+                });
+            }
+
+
+
+        }
     }
 }
