@@ -1,27 +1,22 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using VMS.TPS;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
-using Microsoft.Win32;
-using System.Xml.Linq;
-using static System.Net.Mime.MediaTypeNames;
-using System.Windows.Media;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Windows.Shapes;
-using System.ComponentModel;
-using System.Windows.Threading;
 
 namespace ProfileComparison
 {
 
     /// <summary>
-    /// The FileBrowser class contains the interaction methods for FileBrowser.xaml.
+    /// The FileBrowser class contains the interaction methods for FileBrowser.xaml. It is called from ProfileComparison.cs
     /// </summary>
     /// <param name="context">context contains the API handle to the patient currently open in Eclipse</param>
     public partial class FileBrowser : UserControl
@@ -62,7 +57,7 @@ namespace ProfileComparison
             }
         }
 
-        
+
 
 
         public static double interp(double x, double x0, double x1, double y0, double y1)
@@ -92,7 +87,7 @@ namespace ProfileComparison
                 uiFile.Text = fileDialog.FileName;
             }
 
-            
+
         }
 
         // ValidateSigma is called whenever the sigma input field is changed, to validate and reformat the input
@@ -301,14 +296,36 @@ namespace ProfileComparison
                 double dmeas = 0;
                 double dcalc = 0;
 
-
-                if (context.PlanSetup.PhotonCalculationModel is null)
+                if (context.PlanSetup.Beams.First().EnergyModeDisplayName.Contains('E'))
                 {
-                    //
-                    //
-                    // R50 TO DO
-                    //
-                    //
+                    for (int i = 1; i < txt.Count(); i++)
+                    {
+                        if (Math.Sign(txt[i - 1].Value - 50) != Math.Sign(txt[i].Value - 50))
+                        {
+                            dmeas = interp(50, txt[i - 1].Value, txt[i].Value, txt[i - 1].Position[1], txt[i].Position[1]);
+                            t = Math.Round(dmeas * 10) / 100;
+                            uiDmeas.Text = t.ToString() + " cm";
+                            break;
+                        }
+                    }
+
+                    for (int i = 1; i < convtps.Count(); i++)
+                    {
+                        if (Math.Sign(convtps[i - 1].Value - 50) != Math.Sign(convtps[i].Value - 50))
+                        {
+                            dcalc = interp(50, convtps[i - 1].Value, convtps[i].Value, convtps[i - 1].Position[1], convtps[i].Position[1]);
+                            t = Math.Round(dcalc * 10) / 100;
+                            uiDcalc.Text = t.ToString() + " cm";
+                            break;
+                        }
+                    }
+
+                    if (dmeas != 0 && dcalc != 0)
+                    {
+                        t = Math.Round((dcalc - dmeas) * 10) / 100;
+                        uiDdiff.Text = t.ToString() + " cm";
+                    }
+
                 }
                 else
                 {
@@ -394,7 +411,7 @@ namespace ProfileComparison
                     {
                         localMax = point.Value;
                     }
- 
+
                     if (point.Value2 <= 1)
                     {
                         globalPass = globalPass + 1;
