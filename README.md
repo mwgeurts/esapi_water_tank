@@ -3,6 +3,8 @@
 by Mark Geurts <mark.w.geurts@gmail.com>
 <br>Copyright &copy; 2024, Aspirus Health
 
+![UserInterface](https://github.com/mwgeurts/esapi_water_tank/assets/6982826/d8e6b440-7f68-40f4-96a7-0865dbf12e8b)
+
 ## Description
 
 `ProfileComparison.easpi.dll` is a standalone ESAPI plugin that allows users to load Sun Nuclear water tank (.snctxt) profiles and compare to the calculated dose of the selected plan using a gamma evaluation. By calculating the dose to a water phantom in the treatment planning system and comparing the results to measured water tank profiles, this tool allows users to quickly evaluate the accuracy of their treatment planning system without the need to export each dose volume to DICOM. This type of evaluation is recommended as part of the validation of treatment planning system algorithms during commissioning in AAPM MPPG 5: 
