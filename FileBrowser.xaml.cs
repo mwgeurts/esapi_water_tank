@@ -27,7 +27,7 @@ namespace ProfileComparison
         // in FileBrowser.xaml. In the future I would like the code to determine these values automatically and support
         // dynamic resizing. Alas, for another day.
         readonly double chartHeight = 370;
-        readonly double chartWidth = 437;
+        readonly double chartWidth = 459;
 
         // FileBrowser constructor
         public FileBrowser()
@@ -214,9 +214,11 @@ namespace ProfileComparison
             uiLPass.Text = "";
             uiLAvg.Text = "";
             uiLMax.Text = "";
+            uiLC80.Text = "";
             uiGPass.Text = "";
             uiGAvg.Text = "";
             uiGMax.Text = "";
+            uiGC80.Text = "";
         }
 
         // CompareProfiles is called when the form button is clicked and compares the dose volume of the current plan to
@@ -376,6 +378,11 @@ namespace ProfileComparison
             // Initialize temporary variable to store rounded statistics
             double t;
 
+            // Initialize temporary variable to store FWHM and center (used for central 80% determination) using the full profile. If a valid
+            // FWHM is found later, we will use that instead
+            double fwhm = (txt.Last().Position - txt.First().Position).Length;
+            VVector center = (txt.Last().Position + txt.First().Position) / 2;
+
             // If the depth axis changes, assume this is a depth profile, so calculate PDD or R50 (based on if it is an photon or electron)
             if (Math.Abs(txt.First().Position[1] - txt.Last().Position[1]) > 10)
             {
@@ -486,22 +493,26 @@ namespace ProfileComparison
             else
             {
                 // Run CalculateFWHM using the SNC TXT profile and store the resulting FWHM value
-                double fmeas = Script.CalculateFWHM(txt);
+                (double fmeas, VVector cmeas) = Script.CalculateFWHM(txt);
 
                 // If a valid FWHM was returned, round and report it to the UI
                 if (fmeas != 0)
                 {
+                    fwhm = fmeas;
+                    center = cmeas;
                     t = Math.Round(fmeas * 10) / 100;
                     uiFmeas.Text = t.ToString() + " cm";
                 }
 
 
                 // Run CalculateFWHM using the convolved TPS profile and store the resulting FWHM value
-                double fcalc = Script.CalculateFWHM(convtps);
+                (double fcalc, VVector ccalc) = Script.CalculateFWHM(convtps);
 
                 // If a valid FWHM was returned, round and report it to the UI
                 if (fcalc != 0)
                 {
+                    fwhm = fcalc;
+                    center = ccalc;
                     t = Math.Round(fcalc * 10) / 100;
                     uiFcalc.Text = t.ToString() + " cm";
                 }
@@ -528,6 +539,9 @@ namespace ProfileComparison
             double globalAverage = 0;
             double localMax = 0;
             double globalMax = 0;
+            double localCentral = 0;
+            double globalCentral = 0;
+            double countCentral = 0;
 
             // If a valid gamma Profile list was returned
             if (gamma.Count > 0)
@@ -538,7 +552,7 @@ namespace ProfileComparison
                     // If the local gamma value passed, increment the local pass rate
                     if (point.Value <= 1)
                     {
-                        localPass++;
+                        localPass++;       
                     }
 
                     // Update the local average statistic
@@ -563,6 +577,25 @@ namespace ProfileComparison
                     if (globalMax < point.Value2)
                     {
                         globalMax = point.Value2;
+                    }
+
+                    // If the profile point is within the central 80% of the FWHM
+                    if (fwhm > 0 && (point.Position - center).Length < fwhm * 0.4)
+                    {
+                        // Count the total number of central 80% values
+                        countCentral++;
+
+                        // Count the number of central 80% local pass values
+                        if (point.Value <= 1)
+                        {
+                            localCentral++;
+                        }
+
+                        // Count the number of central 80% global pass values
+                        if (point.Value2 <= 1)
+                        {
+                            globalCentral++;
+                        }
                     }
                 }
 
@@ -592,6 +625,19 @@ namespace ProfileComparison
 
                 t = Math.Round((globalMax) * 100) / 100;
                 uiGMax.Text = t.ToString();
+
+                // Round and update the UI for central 80% values, if FWHM was calculated
+                if (fwhm > 0)
+                {
+                    localCentral = localCentral / countCentral * 100;
+                    globalCentral = globalCentral / countCentral * 100;
+
+                    t = Math.Round((localCentral) * 10) / 10;
+                    uiLC80.Text = t.ToString() + "%";
+
+                    t = Math.Round((globalCentral) * 10) / 10;
+                    uiGC80.Text = t.ToString() + "%";
+                }
             }
 
             // Clear the Chart Area of all previous profiles

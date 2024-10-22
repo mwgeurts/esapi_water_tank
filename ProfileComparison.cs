@@ -224,12 +224,14 @@ namespace VMS.TPS
         /// CalculateFWHM calculates and returns the Full Width at Half Maximum (FWHM) of the provided profile.
         /// </summary>
         /// <param name="profile">List of Profile objects (see class above) for which the FWHM will be calculated</param>
-        /// <returns>double containing the FWHM value, or zero if it was not found</returns>
-        public static double CalculateFWHM(List<Profile> profile)
+        /// <returns>tupledouble containing the FWHM value, or zero if it was not found</returns>
+        /// <returns>VVector containing the position halfway between the left and right FWHM</returns>
+        public static (double, VVector) CalculateFWHM(List<Profile> profile)
         {
             // Initialize temporary and return variables
             double thresh = 0;
             double fwhm = 0;
+            VVector center = new VVector(0, 0, 0);
 
             // Loop through and find the maximum value in the profile (in case the profile was not normalized)
             foreach (Profile point in profile)
@@ -247,14 +249,16 @@ namespace VMS.TPS
             // start at i = 1 since we use the points [i] and [i-1] in each loop 
             for (int i = 1; i < profile.Count; i++)
             {
-                // If the points [i] and [i-1] are on either side of the threshold, we've found the "left" side of the profile
-                if (Math.Sign(profile[i - 1].Value - thresh) != Math.Sign(profile[i].Value - thresh))
+                // If the points [i] and [i-1] are valid and on either side of the threshold, we've found the "left" side of the profile
+                if (profile[i - 1].Value == profile[i - 1].Value && profile[i].Value == profile[i].Value && 
+                    Math.Sign(profile[i - 1].Value - thresh) != Math.Sign(profile[i].Value - thresh))
                 {
                     // Now start looking for the other side of the profile, starting one over from where we found the left side
                     for (int j = i + 2; j < profile.Count - 1; j++)
                     {
                         // If the points [j] and [j+1] are on either side of the threshold, we've found the "right" side
-                        if (Math.Sign(profile[j].Value - thresh) != Math.Sign(profile[j + 1].Value - thresh))
+                        if (profile[i + 1].Value == profile[i + 1].Value && profile[i].Value == profile[i].Value && 
+                            Math.Sign(profile[j].Value - thresh) != Math.Sign(profile[j + 1].Value - thresh))
                         {
                             // Calculate the FWHM as the difference between the points [i] and [j], adding the interpolated distance 
                             // from each point to the threshold (using similar triangles) on each side
@@ -263,7 +267,10 @@ namespace VMS.TPS
                                 Math.Min(profile[i - 1].Value, profile[i].Value)) / (profile[i - 1].Value - profile[i].Value))) +
                                 (profile[j].Position - profile[j + 1].Position).Length * (1 - Math.Abs((thresh -
                                 Math.Min(profile[j].Value, profile[j + 1].Value)) / (profile[j].Value - profile[j + 1].Value)));
-                            
+
+                            // Calculate the center as the average between points [i] and [j] (this is used for the central 80% metric)
+                            center = (profile[j].Position + profile[i].Position) / 2;
+
                             // Exit the [j] loop, as the FWHM was found
                             break;
                         }
@@ -274,8 +281,8 @@ namespace VMS.TPS
                 }
             }
 
-            // Return the calculated FWHM
-            return fwhm;
+            // Return the calculated FWHM and center
+            return ( fwhm, center );
         }
     }
 }
