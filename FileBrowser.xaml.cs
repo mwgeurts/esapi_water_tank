@@ -378,10 +378,13 @@ namespace ProfileComparison
             // Initialize temporary variable to store rounded statistics
             double t;
 
-            // Initialize temporary variable to store FWHM and center (used for central 80% determination) using the full profile. If a valid
+            // Initialize temporary variablse to store FWHM and center (used for central 80% determination) using the full profile. If a valid
             // FWHM is found later, we will use that instead
             double fwhm = (txt.Last().Position - txt.First().Position).Length;
             VVector center = (txt.Last().Position + txt.First().Position) / 2;
+
+            // Initialize temporary variable to store max depth (used for depth profiles)
+            double maxdepth = 0;
 
             // If the depth axis changes, assume this is a depth profile, so calculate PDD or R50 (based on if it is an photon or electron)
             if (Math.Abs(txt.First().Position[1] - txt.Last().Position[1]) > 10)
@@ -389,6 +392,16 @@ namespace ProfileComparison
                 // Initialize measured (SNC TXT) and calculated (TPS) depth metric variables
                 double dmeas = 0;
                 double dcalc = 0;
+
+                // Loop through the profile to find max depth (use the measured profile)
+                for (int i = 1; i < txt.Count(); i++)
+                {
+                    if (txt[i].Value == 100)
+                    {
+                        maxdepth = txt[i].Position[1];
+                        break;
+                    }
+                }
 
                 // If the treatment beam energy contains an "E", it is an Electron beam, so calculate R50 (note, this assumes that the first
                 // beam is the one that was used to calculate dose; there may be a better way to determine this)
@@ -579,8 +592,26 @@ namespace ProfileComparison
                         globalMax = point.Value2;
                     }
 
-                    // If the profile point is within the central 80% of the FWHM
-                    if (fwhm > 0 && (point.Position - center).Length < fwhm * 0.4)
+                    // If the profile point is within the central 80% of the FWHM or beyond the maximum depth
+                    if (maxdepth > 0 && point.Position[1] > maxdepth)
+                    {
+                        // Count the total number of central 80% values
+                        countCentral++;
+
+                        // Count the number of central 80% local pass values
+                        if (point.Value <= 1)
+                        {
+                            localCentral++;
+                        }
+
+                        // Count the number of central 80% global pass values
+                        if (point.Value2 <= 1)
+                        {
+                            globalCentral++;
+                        }
+                    }
+                    
+                    else if (fwhm > 0 && (point.Position - center).Length < fwhm * 0.4)
                     {
                         // Count the total number of central 80% values
                         countCentral++;
@@ -627,7 +658,7 @@ namespace ProfileComparison
                 uiGMax.Text = t.ToString();
 
                 // Round and update the UI for central 80% values, if FWHM was calculated
-                if (fwhm > 0)
+                if (maxdepth > 0 || fwhm > 0)
                 {
                     localCentral = localCentral / countCentral * 100;
                     globalCentral = globalCentral / countCentral * 100;
@@ -637,6 +668,16 @@ namespace ProfileComparison
 
                     t = Math.Round((globalCentral) * 10) / 10;
                     uiGC80.Text = t.ToString() + "%";
+
+                    // Set label based on value
+                    if (maxdepth > 0)
+                    {
+                        uiLabel.Content = "Below Dmax";
+                    }
+                    else
+                    {
+                        uiLabel.Content = "Central 80";
+                    }
                 }
             }
 
