@@ -27,7 +27,7 @@ namespace ProfileComparison
         // in FileBrowser.xaml. In the future I would like the code to determine these values automatically and support
         // dynamic resizing. Alas, for another day.
         readonly double chartHeight = 370;
-        readonly double chartWidth = 459;
+        readonly double chartWidth = 539;
 
         // FileBrowser constructor
         public FileBrowser()

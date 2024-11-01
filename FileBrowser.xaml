@@ -4,17 +4,17 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              DataContext="{Binding ChartProfile}"
-             mc:Ignorable="d" Height="400" Width="1000">
+             mc:Ignorable="d" Height="400" Width="1100">
     <Grid Margin="10,10,10,10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
-            <ColumnDefinition Width="70"/>
+            <ColumnDefinition Width="75"/>
             <ColumnDefinition Width="10"/>
-            <ColumnDefinition Width="70"/>
+            <ColumnDefinition Width="75"/>
             <ColumnDefinition Width="10"/>
-            <ColumnDefinition Width="70"/>
+            <ColumnDefinition Width="75"/>
             <ColumnDefinition Width="10"/>
-            <ColumnDefinition Width="70"/>
+            <ColumnDefinition Width="75"/>
             <ColumnDefinition Width="10"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -49,7 +49,7 @@
         <Label Grid.Column="0" Grid.Row="4" Content="Gamma Settings"></Label>
         <TextBox Grid.Column="1" Grid.Row="4" Name="uiPercent" IsReadOnly="False" LostKeyboardFocus="ValidatePercent">1.0%</TextBox>
         <TextBox Grid.Column="3" Grid.Row="4" Name="uiDTA" IsReadOnly="False" LostKeyboardFocus="ValidateDTA">1.0 mm</TextBox>
-        <TextBox Grid.Column="5" Grid.Row="4" Name="uiThreshold" IsReadOnly="False" LostKeyboardFocus="ValidateThreshold">20.0%</TextBox>
+        <TextBox Grid.Column="5" Grid.Row="4" Name="uiThreshold" IsReadOnly="False" LostKeyboardFocus="ValidateThreshold">10.0%</TextBox>
         <Button Grid.Column="1" Grid.Row="6" Grid.ColumnSpan="3" Content="Calculate" Click="CompareProfiles" Height="25"></Button>
         <Label Grid.Column="1" Grid.Row="8" Content="Text File" Foreground="Red"></Label>
         <Label Grid.Column="3" Grid.Row="8" Content="TPS" Foreground="Blue"></Label>

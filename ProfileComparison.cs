@@ -40,7 +40,7 @@ namespace VMS.TPS
             var userInterface = new ProfileComparison.FileBrowser();
             window.Title = "Water Tank Profile Comparison Tool";
             window.Content = userInterface;
-            window.Width = 1060;
+            window.Width = 1170;
             window.Height = 500;
 
             // Pass the current patient context to the UI
