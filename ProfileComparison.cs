@@ -42,6 +42,7 @@ namespace VMS.TPS
             window.Content = userInterface;
             window.Width = 1170;
             window.Height = 500;
+            userInterface.uiMax.IsChecked = true;
 
             // Pass the current patient context to the UI
             userInterface.context = context;

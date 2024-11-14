@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              DataContext="{Binding ChartProfile}"
-             mc:Ignorable="d" Height="400" Width="1100">
+             mc:Ignorable="d" Height="400" Width="1100" Background="White">
     <Grid Margin="10,10,10,10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
@@ -38,45 +38,50 @@
             <RowDefinition Height="25"/>
             <RowDefinition Height="10"/>
             <RowDefinition Height="25"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="25"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Label Grid.Column="0" Grid.Row="0" Content="SNC TXT File"></Label>
-        <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="5"  Name="uiFile" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="5" Name="uiFile" IsReadOnly="False"></TextBox>
         <Button Grid.Column="6" Grid.Row="0" Grid.ColumnSpan="2" Content="Browse" Click="BrowseFile" Height="25"></Button>
-        <Label Grid.Column="0" Grid.Row="2" Content="Convolution Sigma/Truncation"></Label>
-        <TextBox Grid.Column="1" Grid.Row="2" Name="uiSigma" IsReadOnly="False" LostKeyboardFocus="ValidateSigma">0.000 mm</TextBox>
-        <TextBox Grid.Column="3" Grid.Row="2" Name="uiTruncation" IsReadOnly="False" LostKeyboardFocus="ValidateTruncation">0.000 mm</TextBox>
-        <Label Grid.Column="0" Grid.Row="4" Content="Gamma Settings"></Label>
-        <TextBox Grid.Column="1" Grid.Row="4" Name="uiPercent" IsReadOnly="False" LostKeyboardFocus="ValidatePercent">1.0%</TextBox>
-        <TextBox Grid.Column="3" Grid.Row="4" Name="uiDTA" IsReadOnly="False" LostKeyboardFocus="ValidateDTA">1.0 mm</TextBox>
-        <TextBox Grid.Column="5" Grid.Row="4" Name="uiThreshold" IsReadOnly="False" LostKeyboardFocus="ValidateThreshold">10.0%</TextBox>
-        <Button Grid.Column="1" Grid.Row="6" Grid.ColumnSpan="3" Content="Calculate" Click="CompareProfiles" Height="25"></Button>
-        <Label Grid.Column="1" Grid.Row="8" Content="Text File" Foreground="Red"></Label>
-        <Label Grid.Column="3" Grid.Row="8" Content="TPS" Foreground="Blue"></Label>
-        <Label Grid.Column="5" Grid.Row="8" Content="Difference"></Label>
-        <Label Grid.Column="0" Grid.Row="10" Content="PDD(10)/R50"></Label>
-        <TextBox Grid.Column="1" Grid.Row="10" Name="uiDmeas" IsReadOnly="True"></TextBox>
-        <TextBox Grid.Column="3" Grid.Row="10" Name="uiDcalc" IsReadOnly="True"></TextBox>
-        <TextBox Grid.Column="5" Grid.Row="10" Name="uiDdiff" IsReadOnly="True"></TextBox>
-        <Label Grid.Column="0" Grid.Row="12" Content="FWHM"></Label>
-        <TextBox Grid.Column="1" Grid.Row="12" Name="uiFmeas" IsReadOnly="True"></TextBox>
-        <TextBox Grid.Column="3" Grid.Row="12" Name="uiFcalc" IsReadOnly="True"></TextBox>
-        <TextBox Grid.Column="5" Grid.Row="12" Name="uiFdiff" IsReadOnly="True"></TextBox>
-        <Label Grid.Column="1" Grid.Row="14" Content="Pass Rate"></Label>
-        <Label Grid.Column="3" Grid.Row="14" Content="Average"></Label>
-        <Label Grid.Column="5" Grid.Row="14" Content="Max Value"></Label>
-        <Label Grid.Column="7" Grid.Row="14" Name="uiLabel" Content="Central 80"></Label>
-        <Label Grid.Column="0" Grid.Row="16" Content="Local Gamma"></Label>
-        <TextBox Grid.Column="1" Grid.Row="16" Name="uiLPass" IsReadOnly="True"></TextBox>
-        <TextBox Grid.Column="3" Grid.Row="16" Name="uiLAvg" IsReadOnly="True"></TextBox>
-        <TextBox Grid.Column="5" Grid.Row="16" Name="uiLMax" IsReadOnly="True"></TextBox>
-        <TextBox Grid.Column="7" Grid.Row="16" Name="uiLC80" IsReadOnly="True"></TextBox>
-        <Label Grid.Column="0" Grid.Row="18" Content="Global Gamma (Plotted)"></Label>
-        <TextBox Grid.Column="1" Grid.Row="18" Name="uiGPass" IsReadOnly="True"></TextBox>
-        <TextBox Grid.Column="3" Grid.Row="18" Name="uiGAvg" IsReadOnly="True"></TextBox>
-        <TextBox Grid.Column="5" Grid.Row="18" Name="uiGMax" IsReadOnly="True"></TextBox>
-        <TextBox Grid.Column="7" Grid.Row="18" Name="uiGC80" IsReadOnly="True"></TextBox>
-        <Border Name="uiBorder" Grid.Column="9" Grid.Row="0" Grid.RowSpan="20" BorderThickness="0.5" BorderBrush="Gray">
+        <Label Grid.Column="0" Grid.Row="2" Content="Normalization"></Label>
+        <RadioButton Grid.Column="1" Grid.Row="2" Name="uiMax" GroupName="Normalize" Checked="RadioChange">Max</RadioButton>
+        <RadioButton Grid.Column="3" Grid.Row="2" Grid.ColumnSpan="3" Name="uiCenter" GroupName="Normalize" Checked="RadioChange">Center/D10</RadioButton>
+        <Label Grid.Column="0" Grid.Row="4" Content="Convolution Sigma/Truncation"></Label>
+        <TextBox Grid.Column="1" Grid.Row="4" Name="uiSigma" IsReadOnly="False" LostKeyboardFocus="ValidateSigma">0.000 mm</TextBox>
+        <TextBox Grid.Column="3" Grid.Row="4" Name="uiTruncation" IsReadOnly="False" LostKeyboardFocus="ValidateTruncation">0.000 mm</TextBox>
+        <Label Grid.Column="0" Grid.Row="6" Content="Gamma Settings"></Label>
+        <TextBox Grid.Column="1" Grid.Row="6" Name="uiPercent" IsReadOnly="False" LostKeyboardFocus="ValidatePercent">1.0%</TextBox>
+        <TextBox Grid.Column="3" Grid.Row="6" Name="uiDTA" IsReadOnly="False" LostKeyboardFocus="ValidateDTA">1.0 mm</TextBox>
+        <TextBox Grid.Column="5" Grid.Row="6" Name="uiThreshold" IsReadOnly="False" LostKeyboardFocus="ValidateThreshold">20.0%</TextBox>
+        <Button Grid.Column="1" Grid.Row="8" Grid.ColumnSpan="3" Content="Calculate" Click="CompareProfiles" Height="25"></Button>
+        <Label Grid.Column="1" Grid.Row="10" Content="Text File" Foreground="Red"></Label>
+        <Label Grid.Column="3" Grid.Row="10" Content="TPS" Foreground="Blue"></Label>
+        <Label Grid.Column="5" Grid.Row="10" Content="Difference"></Label>
+        <Label Grid.Column="0" Grid.Row="12" Content="PDD(10)/R50"></Label>
+        <TextBox Grid.Column="1" Grid.Row="12" Name="uiDmeas" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="3" Grid.Row="12" Name="uiDcalc" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="5" Grid.Row="12" Name="uiDdiff" IsReadOnly="True"></TextBox>
+        <Label Grid.Column="0" Grid.Row="14" Content="FWHM"></Label>
+        <TextBox Grid.Column="1" Grid.Row="14" Name="uiFmeas" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="3" Grid.Row="14" Name="uiFcalc" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="5" Grid.Row="14" Name="uiFdiff" IsReadOnly="True"></TextBox>
+        <Label Grid.Column="1" Grid.Row="16" Content="Pass Rate"></Label>
+        <Label Grid.Column="3" Grid.Row="16" Content="Average"></Label>
+        <Label Grid.Column="5" Grid.Row="16" Content="Max Value"></Label>
+        <Label Grid.Column="7" Grid.Row="16" Name="uiLabel" Content="Central 80"></Label>
+        <Label Grid.Column="0" Grid.Row="18" Content="Local Gamma"></Label>
+        <TextBox Grid.Column="1" Grid.Row="18" Name="uiLPass" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="3" Grid.Row="18" Name="uiLAvg" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="5" Grid.Row="18" Name="uiLMax" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="7" Grid.Row="18" Name="uiLC80" IsReadOnly="True"></TextBox>
+        <Label Grid.Column="0" Grid.Row="20" Content="Global Gamma (Plotted)"></Label>
+        <TextBox Grid.Column="1" Grid.Row="20" Name="uiGPass" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="3" Grid.Row="20" Name="uiGAvg" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="5" Grid.Row="20" Name="uiGMax" IsReadOnly="True"></TextBox>
+        <TextBox Grid.Column="7" Grid.Row="20" Name="uiGC80" IsReadOnly="True"></TextBox>
+        <Border Name="uiBorder" Grid.Column="9" Grid.Row="0" Grid.RowSpan="22" BorderThickness="0.5" BorderBrush="Gray">
             <Canvas Name="uiChartArea" Background="White" />
         </Border>
     </Grid>

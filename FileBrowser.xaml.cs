@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -202,6 +203,13 @@ namespace ProfileComparison
             ClearResults();
         }
 
+        // RadioChange is called whenever the normalization radio button is changed
+        private void RadioChange(object sender, RoutedEventArgs e)
+        {
+            // Clear all results fields
+            ClearResults();
+        }
+
         // ClearResults is called whenever an input variable is changed and clears the results text boxes
         private void ClearResults()
         {
@@ -299,7 +307,7 @@ namespace ProfileComparison
                     };
 
                     // If the point is too close to the start of the profile, set the startEdge flag
-                    if ((point.Position - tps.First().Position).Length <= trunc / 2)
+                    if ((point.Position - tps.First().Position).Length <= trunc)
                     {
                         firstEdge = true;
                     }
@@ -309,7 +317,7 @@ namespace ProfileComparison
                     }
 
                     // If the point is too close to the end of the profile, set the lastEdge flag
-                    if ((point.Position - tps.Last().Position).Length <= trunc / 2)
+                    if ((point.Position - tps.Last().Position).Length <= trunc)
                     {
                         lastEdge = true;
                     }
@@ -369,7 +377,7 @@ namespace ProfileComparison
                 }
             }
 
-            // Normalize the convolved profile back to 100%
+            // Normalize the convolved profile back to 100% 
             foreach (Profile point in convtps)
             {
                 point.Value = point.Value / maxval * 100;
@@ -535,6 +543,92 @@ namespace ProfileComparison
                 {
                     t = Math.Round((fcalc - fmeas) * 10) / 100;
                     uiFdiff.Text = t.ToString() + " cm";
+                }
+            }
+
+            // If field center/D10 normalization is selected
+            if (uiCenter.IsChecked == true)
+            {
+                // Initialize temporary variables to store normalization factor
+                double normtxt = 100;
+                double normtps = 100;
+
+                // If depth axis changes, normalize to D10
+                if (Math.Abs(txt.First().Position[1] - txt.Last().Position[1]) > 10)
+                {
+                    // Loop through the SNC TXT profile using indices (necessary since [i] and [i-1] are looked at together)
+                    for (int i = 1; i < txt.Count(); i++)
+                    {
+                        // If the depth at [i] and [i-1] are above and below 10 cm
+                        if (Math.Sign(txt[i - 1].Position[1] - 100) != Math.Sign(txt[i].Position[1] - 100))
+                        {
+                            // Interpolate between [i] and [i-1] to determine normalization factor
+                            normtxt = interp(100, txt[i - 1].Position[1], txt[i].Position[1], txt[i - 1].Value, txt[i].Value);
+
+                            // End the for loop, as PDD(10) was found
+                            break;
+                        }
+                    }
+
+                    // Loop through the convolve TPS profile using indices (necessary since [i] and [i-1] are looked at together)
+                    for (int i = 1; i < convtps.Count(); i++)
+                    {
+                        // If the depth at [i] and [i-1] are above and below 10 cm
+                        if (Math.Sign(convtps[i - 1].Position[1] - 100) != Math.Sign(convtps[i].Position[1] - 100))
+                        {
+                            // Interpolate between [i] and [i-1] to determine normalization factor
+                            normtps = interp(100, convtps[i - 1].Position[1], convtps[i].Position[1], convtps[i - 1].Value, convtps[i].Value);
+
+                            // End the for loop, as PDD(10) was found
+                            break;
+                        }
+                    }
+
+                    // Loop through SNC TXT profile again, normalizing TPS to TXT D10
+                    foreach (Profile point in convtps)
+                    {
+                        point.Value = point.Value * normtxt / normtps;
+                    }
+                }
+
+                // Otherwise, normalize to field center
+                else
+                {
+                    // Loop through the SNC TXT profile using indices (necessary since [i] and [i-1] are looked at together)
+                    for (int i = 1; i < txt.Count(); i++)
+                    {
+                        // If the position at [i] and [i-1] are both within one datapoint of center
+                        if ((txt[i - 1].Position - center).Length <= (txt[i - 1].Position - txt[i].Position).Length 
+                            && (txt[i].Position - center).Length <= (txt[i - 1].Position - txt[i].Position).Length)
+                        {
+                            // Average [i] and [i-1] to determine normalization factor
+                            normtxt = (txt[i - 1].Value + txt[i].Value) / 2;
+
+                            // End the for loop, as PDD(10) was found
+                            break;
+                        }
+                    }
+
+                    // Loop through the convolved TPS profile using indices (necessary since [i] and [i-1] are looked at together)
+                    for (int i = 1; i < convtps.Count(); i++)
+                    {
+                        // If the position at [i] and [i-1] are both within one datapoint of center
+                        if ((convtps[i - 1].Position - center).Length <= (convtps[i - 1].Position - convtps[i].Position).Length
+                            && (convtps[i].Position - center).Length <= (convtps[i - 1].Position - convtps[i].Position).Length)
+                        {
+                            // Average [i] and [i-1] to determine normalization factor
+                            normtps = (convtps[i - 1].Value + convtps[i].Value) / 2;
+
+                            // End the for loop, as PDD(10) was found
+                            break;
+                        }
+                    }
+
+                    // Loop through convolved TPS profile again, normalizing by center
+                    foreach (Profile point in convtps)
+                    {
+                        point.Value = point.Value * normtxt / normtps;
+                    }
                 }
             }
 
