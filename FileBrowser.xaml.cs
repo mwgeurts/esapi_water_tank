@@ -389,7 +389,7 @@ namespace ProfileComparison
             // Initialize temporary variablse to store FWHM and center (used for central 80% determination) using the full profile. If a valid
             // FWHM is found later, we will use that instead
             double fwhm = (txt.Last().Position - txt.First().Position).Length;
-            VVector center = (txt.Last().Position + txt.First().Position) / 2;
+            VVector center = txt.Last().Position + txt.First().Position;
 
             // Initialize temporary variable to store max depth (used for depth profiles)
             double maxdepth = 0;
@@ -550,8 +550,9 @@ namespace ProfileComparison
             if (uiCenter.IsChecked == true)
             {
                 // Initialize temporary variables to store normalization factor
-                double normtxt = 100;
-                double normtps = 100;
+                double normtxt = 0;
+                double normtps = 0;
+                double count = 0;
 
                 // If depth axis changes, normalize to D10
                 if (Math.Abs(txt.First().Position[1] - txt.Last().Position[1]) > 10)
@@ -587,42 +588,44 @@ namespace ProfileComparison
                     // Loop through SNC TXT profile again, normalizing TPS to TXT D10
                     foreach (Profile point in convtps)
                     {
-                        point.Value = point.Value * normtxt / normtps;
+                        if (normtps > 0)
+                        {
+                            point.Value = point.Value * normtxt / normtps;
+                        }
                     }
                 }
 
-                // Otherwise, normalize to field center
+                // Otherwise, normalize to field center (average over the central 10%)
                 else
                 {
-                    // Loop through the SNC TXT profile using indices (necessary since [i] and [i-1] are looked at together)
-                    for (int i = 1; i < txt.Count(); i++)
+                    // Loop through the SNC TXT profile
+                    foreach (Profile point in txt)
                     {
-                        // If the position at [i] and [i-1] are both within one datapoint of center
-                        if ((txt[i - 1].Position - center).Length <= (txt[i - 1].Position - txt[i].Position).Length 
-                            && (txt[i].Position - center).Length <= (txt[i - 1].Position - txt[i].Position).Length)
+                        // If point position is within 10% of the FWHM, add value and increment counter (to average)
+                        if ((point.Position - center).Length <= fwhm * 0.1)
                         {
-                            // Average [i] and [i-1] to determine normalization factor
-                            normtxt = (txt[i - 1].Value + txt[i].Value) / 2;
-
-                            // End the for loop, as PDD(10) was found
-                            break;
+                            normtxt += point.Value;
+                            count++;
                         }
                     }
 
-                    // Loop through the convolved TPS profile using indices (necessary since [i] and [i-1] are looked at together)
-                    for (int i = 1; i < convtps.Count(); i++)
-                    {
-                        // If the position at [i] and [i-1] are both within one datapoint of center
-                        if ((convtps[i - 1].Position - center).Length <= (convtps[i - 1].Position - convtps[i].Position).Length
-                            && (convtps[i].Position - center).Length <= (convtps[i - 1].Position - convtps[i].Position).Length)
-                        {
-                            // Average [i] and [i-1] to determine normalization factor
-                            normtps = (convtps[i - 1].Value + convtps[i].Value) / 2;
+                    // Calculate average value and reset counter
+                    normtxt = normtxt / count;
+                    count = 0;
 
-                            // End the for loop, as PDD(10) was found
-                            break;
+                    // Loop through the SNC TXT profile
+                    foreach (Profile point in convtps)
+                    {
+                        // If point position is within 10% of the FWHM, add value and increment counter (to average)
+                        if ((point.Position - center).Length <= fwhm * 0.1)
+                        {
+                            normtps += point.Value;
+                            count++;
                         }
                     }
+
+                    // Calculate average value
+                    normtps = normtps / count;
 
                     // Loop through convolved TPS profile again, normalizing by center
                     foreach (Profile point in convtps)
