@@ -249,11 +249,11 @@ namespace ProfileComparison
             VVector start = context.Image.UserToDicom(txt.First().Position, context.PlanSetup);
             VVector end = context.Image.UserToDicom(txt.Last().Position, context.PlanSetup);
 
-            // Set the TPS resolution equal to 10X the DTA (this is a reasonable balance between gamma calculation accuracy
+            // Set the TPS resolution equal to 10X the measured (this is a reasonable balance between gamma calculation accuracy
             // and computation speed; increasing this multiplier will increase gamma accuracy but with diminishing returns)
             Double.TryParse(Regex.Match(uiDTA.Text, @"\d+\.*\d*").Value, out double dta);
             DoseProfile tpsProfile = context.PlanSetup.Dose.GetDoseProfile(start, end, 
-                new double[(int)Math.Ceiling((end - start).Length / dta * 10)]);
+                new double[txt.Count() * 10]);
 
             // Store the DoseProfile object as Profile list, converting the coordinates back from DICOM and normalizing
             // to the maximum value along the profile
@@ -389,7 +389,7 @@ namespace ProfileComparison
             // Initialize temporary variablse to store FWHM and center (used for central 80% determination) using the full profile. If a valid
             // FWHM is found later, we will use that instead
             double fwhm = (txt.Last().Position - txt.First().Position).Length;
-            VVector center = txt.Last().Position + txt.First().Position;
+            VVector center = (txt.Last().Position + txt.First().Position) / 2;
 
             // Initialize temporary variable to store max depth (used for depth profiles)
             double maxdepth = 0;

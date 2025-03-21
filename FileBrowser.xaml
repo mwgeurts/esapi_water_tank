@@ -54,7 +54,7 @@
         <Label Grid.Column="0" Grid.Row="6" Content="Gamma Settings"></Label>
         <TextBox Grid.Column="1" Grid.Row="6" Name="uiPercent" IsReadOnly="False" LostKeyboardFocus="ValidatePercent">1.0%</TextBox>
         <TextBox Grid.Column="3" Grid.Row="6" Name="uiDTA" IsReadOnly="False" LostKeyboardFocus="ValidateDTA">1.0 mm</TextBox>
-        <TextBox Grid.Column="5" Grid.Row="6" Name="uiThreshold" IsReadOnly="False" LostKeyboardFocus="ValidateThreshold">20.0%</TextBox>
+        <TextBox Grid.Column="5" Grid.Row="6" Name="uiThreshold" IsReadOnly="False" LostKeyboardFocus="ValidateThreshold">30.0%</TextBox>
         <Button Grid.Column="1" Grid.Row="8" Grid.ColumnSpan="3" Content="Calculate" Click="CompareProfiles" Height="25"></Button>
         <Label Grid.Column="1" Grid.Row="10" Content="Text File" Foreground="Red"></Label>
         <Label Grid.Column="3" Grid.Row="10" Content="TPS" Foreground="Blue"></Label>

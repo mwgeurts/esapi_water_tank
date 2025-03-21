@@ -42,7 +42,7 @@ namespace VMS.TPS
             window.Content = userInterface;
             window.Width = 1170;
             window.Height = 500;
-            userInterface.uiMax.IsChecked = true;
+            userInterface.uiCenter.IsChecked = true;
 
             // Pass the current patient context to the UI
             userInterface.context = context;
@@ -111,8 +111,14 @@ namespace VMS.TPS
                             Value = d
                         };
 
-                        // Add the Profile point to the list
-                        parsedList.Add(nextRow);
+                        // Only add the profile point if it's position is greater than 0.05 mm from the last one (some profiles
+                        // have duplicates or too high of resolution for Gamma calculation to function correctly).
+                        if (matchCount < 2 || (parsedList.Last().Position - nextRow.Position).Length > 0.05)
+                        {
+
+                            // Add the Profile point to the list
+                            parsedList.Add(nextRow);
+                        }
                     }
 
                     // If the line did not match the profile point format, but previous points did, assume this means that the end
