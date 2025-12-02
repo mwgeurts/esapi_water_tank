@@ -96,7 +96,7 @@ namespace ProfileComparison
 
             // Open a new file selection dialog with the following parameters
             OpenFileDialog fileDialog = new OpenFileDialog();
-            fileDialog.Filter = "SNCTXT Files (*.snctxt)|*.snctxt";
+            fileDialog.Filter = "SNCTXT Files (*.snctxt)|*.snctxt|ICP Text Files (*.txt)|*.txt";
             fileDialog.Title = "Select the water tank profile...";
             fileDialog.Multiselect = false;
             var success = fileDialog.ShowDialog();
@@ -105,6 +105,13 @@ namespace ProfileComparison
             if ((bool)success)
             {
                 uiFile.Text = fileDialog.FileName;
+
+                // If a .txt was selected, enable the dropdown menu to select which profile
+                if (uiFile.Text.EndsWith(".txt", StringComparison.CurrentCultureIgnoreCase))
+                    uiICP.Visibility = Visibility.Visible;
+
+                else
+                    uiICP.Visibility = Visibility.Hidden;
             }
         }
 
@@ -234,6 +241,8 @@ namespace ProfileComparison
         private void CompareProfiles(object sender, RoutedEventArgs e)
         {
 
+            List<Profile> txt;
+
             // If the user has not selected a text file yet, inform them that is a required step 
             if (uiFile.Text == "")
             {
@@ -241,8 +250,26 @@ namespace ProfileComparison
                 return;
             }
 
-            // Run ParseSNCTXT to extract the first profile from the selected file
-            List<Profile> txt = Script.ParseSNCTXT(uiFile.Text);
+            // Otherwise, if a .snctxt file was selected
+            else if (uiFile.Text.EndsWith(".snctxt", StringComparison.CurrentCultureIgnoreCase))
+            {
+                // Run ParseSNCTXT to extract the first profile from the selected file
+                txt = Script.ParseSNCTXT(uiFile.Text);
+            }
+
+            // Otherwise, if a .txt file was selected
+            else if (uiFile.Text.EndsWith(".txt", StringComparison.CurrentCultureIgnoreCase))
+            {
+                // Run ParseICPTXT to extract the IC Profiler profile from the selected file
+                txt = Script.ParseICPTXT(uiFile.Text, uiICP.Text);
+            }
+
+            // Otherwise, an unknown file was selected
+            else
+            {
+                MessageBox.Show("An unknown file type was selected");
+                return;
+            }
 
             // Extract a line dose from the current planned dose using the coordinates from the SNC TXT profile, converting
             // to DICOM coordinates using the UserToDicom ESAPI function

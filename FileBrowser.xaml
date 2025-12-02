@@ -48,6 +48,12 @@
         <Label Grid.Column="0" Grid.Row="2" Content="Normalization"></Label>
         <RadioButton Grid.Column="1" Grid.Row="2" Name="uiMax" GroupName="Normalize" Checked="RadioChange">Max</RadioButton>
         <RadioButton Grid.Column="3" Grid.Row="2" Grid.ColumnSpan="3" Name="uiCenter" GroupName="Normalize" Checked="RadioChange">Center/D10</RadioButton>
+        <ComboBox Grid.Column="5" Grid.Row="8" Grid.ColumnSpan="3" Name="uiICP" Visibility="Hidden">
+            <ComboBoxItem IsSelected="True">X Axis</ComboBoxItem>
+            <ComboBoxItem>Y Axis</ComboBoxItem>
+            <ComboBoxItem>Positive Diagonal</ComboBoxItem>
+            <ComboBoxItem>Negative Diagonal</ComboBoxItem>
+        </ComboBox>
         <Label Grid.Column="0" Grid.Row="4" Content="Convolution Sigma/Truncation"></Label>
         <TextBox Grid.Column="1" Grid.Row="4" Name="uiSigma" IsReadOnly="False" LostKeyboardFocus="ValidateSigma">0.000 mm</TextBox>
         <TextBox Grid.Column="3" Grid.Row="4" Name="uiTruncation" IsReadOnly="False" LostKeyboardFocus="ValidateTruncation">0.000 mm</TextBox>

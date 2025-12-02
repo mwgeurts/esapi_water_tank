@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization.Formatters;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 
@@ -115,6 +115,144 @@ namespace VMS.TPS
                         // have duplicates or too high of resolution for Gamma calculation to function correctly).
                         if (matchCount < 2 || (parsedList.Last().Position - nextRow.Position).Length > 0.05)
                         {
+
+                            // Add the Profile point to the list
+                            parsedList.Add(nextRow);
+                        }
+                    }
+
+                    // If the line did not match the profile point format, but previous points did, assume this means that the end
+                    // of the profile has been reached, so stop parsing the file. This prevents parsing other profiles in case there 
+                    // were multiple profiles stored in the SNC TXT file.
+                    else if (matchCount > 0)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // Normalize the profile to 100%
+            foreach (Profile point in parsedList)
+            {
+                point.Value = point.Value / maxval * 100;
+            }
+
+            // Return the Profile list
+            return parsedList;
+        }
+
+        /// <summary>
+        /// ParseICPTXT is called by FileBrowser when the user selects a ICP TXT file to load, and is responsible for parsing the profile data 
+        /// from it. The function will first ask the user which profile to extract (X, Y, or diagonals) then find the first group of profile 
+        /// points in the tab-delimited TXT file (identified by a series of two numbers separated by tabs with no other text on the line), 
+        /// determine the corresponding 3D coordinates, store them in a list of Profile objects (using the Profile class defined above), and 
+        /// stop. If the SNC TXT file contains multiple profiles, only the first profile is returned.
+        /// </summary>
+        /// <param name="fileName">string containing the full path of the SNX TXT file to read</param>
+        /// <param name="type">string containing the profile to extract (X Axis, Y Axis, Positive Diagonal, or Negative Diagonal)</param>
+        /// <returns>a list of Profile objects containing the positions and values of the first profile in the SNC TXT file</returns>
+        /// <exception cref="ArgumentNullException">will be thrown if the filename parameter is empty</exception>
+        public static List<Profile> ParseICPTXT(string fileName, string type)
+        {
+
+            // Defines the effective depth (in mm) of the IC Profiler detectors relative to device SSD. This is accounted for during analysis.
+            double effDepth = 9.4;
+
+            // Verify the input parameters are valid
+            if (fileName == null)
+            {
+                throw new ArgumentNullException("Provided file input must not be empty");
+            }
+            if (type == null)
+            {
+                throw new ArgumentNullException("Provided profile type");
+            }
+
+            // Initialize list to store parsed lines
+            List<Profile> parsedList = new List<Profile>();
+
+            // Initialize counter and stream buffer variables
+            int matchCount = 0;
+            double maxval = 0;
+            const Int32 BufferSize = 128;
+
+            // Define regular expression to detect lines that contain profile points (0.000\t0.000)
+            Regex r = new Regex(@"\t([-\d\.]+)\t([-\d\.]+)");
+
+            // Initialize flag to know when correct profile has been found
+            bool ready = false;
+
+            // Open the file in read-only mode using stream reader
+            using (var fileStream = File.OpenRead(fileName))
+            using (var streamReader = new StreamReader(fileStream, Encoding.UTF8, true, BufferSize))
+            {
+                // Read the next line from the file into a string, until the end of the file
+                String line;
+                while ((line = streamReader.ReadLine()) != null)
+                {
+                    // Check the line to see if 
+                    if (line.StartsWith("Detector ID\t" + type + " Position(cm)"))
+                        ready = true;
+
+                    // Try to match the line to the profile point pattern above
+                    Match m = r.Match(line);
+                    if (ready && m.Success)
+                    {
+                        // Keep track of the number of matched lines
+                        matchCount++;
+
+                        // Retrieve each of the four matched numbers, parsing out as signed doubles
+                        Double.TryParse(m.Groups[1].Value, out double x);
+                        Double.TryParse(m.Groups[2].Value, out double d);
+
+                        // Keep track of profile maximum (to normalize the profile at the end)
+                        if (d > maxval)
+                        {
+                            maxval = d;
+                        }
+
+
+                        // Store the point as a new Profile object based on the profile direction
+                        if (type == "X Axis")
+                        {
+                            Profile nextRow = new Profile
+                            {
+                                Position = new VVector(x * 10, effDepth, 0),
+                                Value = d
+                            };
+
+                            // Add the Profile point to the list
+                            parsedList.Add(nextRow);
+                        }
+                        else if (type == "Y Axis")
+                        {
+                            Profile nextRow = new Profile
+                            {
+                                Position = new VVector(0, effDepth, x * 10),
+                                Value = d
+                            };
+
+                            // Add the Profile point to the list
+                            parsedList.Add(nextRow);
+                        }
+                        else if (type == "Positive Diagonal")
+                        {
+                            Profile nextRow = new Profile
+                            {
+                                Position = new VVector(x / Math.Sqrt(2) * 10, effDepth, x / Math.Sqrt(2) * 10),
+                                Value = d
+                            };
+
+                            // Add the Profile point to the list
+                            parsedList.Add(nextRow);
+                        }
+                        else
+                        {
+                            Profile nextRow = new Profile
+                            {
+                                Position = new VVector(x / Math.Sqrt(2) * 10, effDepth, x / Math.Sqrt(2) * -10),
+                                Value = d
+                            };
 
                             // Add the Profile point to the list
                             parsedList.Add(nextRow);
