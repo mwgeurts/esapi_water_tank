@@ -7,7 +7,7 @@ by Mark Geurts <mark.w.geurts@gmail.com>
 
 ## Description
 
-`ProfileComparison.easpi.dll` is a standalone ESAPI plugin that allows users to load Sun Nuclear water tank (.snctxt) profiles and compare to the calculated dose of the selected plan using a gamma evaluation. By calculating the dose to a water phantom in the treatment planning system and comparing the results to measured water tank profiles, this tool allows users to quickly evaluate the accuracy of their treatment planning system without the need to export each dose volume to DICOM. This type of evaluation is recommended as part of the validation of treatment planning system algorithms during commissioning in AAPM MPPG 5: 
+`ProfileComparison.easpi.dll` is a standalone ESAPI plugin that allows users to load Sun Nuclear&reg; water tank (.snctxt) profiles or IC Profiler&trade; measurement text exports (.txt) and compare to the calculated dose of the selected plan using a gamma evaluation. By calculating the dose to a water phantom in the treatment planning system and comparing the results to measured water tank profiles, this tool allows users to quickly evaluate the accuracy of their treatment planning system without the need to export each dose volume to DICOM. This type of evaluation is recommended as part of the validation of treatment planning system algorithms during commissioning in AAPM MPPG 5: 
 
 Geurts MW, Jacqmin DJ, Jones LE, Kry SF, Mihailidis DN, Ohrt JD, Ritter T, Smilowitz JB, Wingreen NE. [AAPM MEDICAL PHYSICS PRACTICE GUIDELINE 5.b: Commissioning and QA of treatment planning dose calculations-Megavoltage photon and electron beams](https://doi.org/10.1002/acm2.13641). J Appl Clin Med Phys. 2022 Sep;23(9):e13641. doi: 10.1002/acm2.13641. Epub 2022 Aug 10. PMID: 35950259; PMCID: PMC9512346.
 
@@ -26,4 +26,4 @@ To install this plugin, download a release and copy the .dll into the `Published
  
 ## License
 
-Released under the GNU GPL v3.0 License for evaluating and testing purposes only. This tool should NOT be used to evaluate clinical plans or make decisions that impact patient care. See the [LICENSE](LICENSE) file for further details.
+Released under the GNU GPL v3.0 License for evaluating and testing purposes only. This tool should NOT be used to evaluate clinical plans or make decisions that impact patient care. See the [LICENSE](LICENSE) file for further details. Sun Nuclear and IC Profiler are trademarks of Mirion Technologies.
