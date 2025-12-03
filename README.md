@@ -1,7 +1,7 @@
 # ESAPI Water Tank Comparison plugin
 
 by Mark Geurts <mark.w.geurts@gmail.com>
-<br>Copyright &copy; 2024, Aspirus Health
+<br>Copyright &copy; 2025, Aspirus Health
 
 ![UserInterface](https://github.com/mwgeurts/esapi_water_tank/assets/6982826/d8e6b440-7f68-40f4-96a7-0865dbf12e8b)
 
